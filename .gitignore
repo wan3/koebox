@@ -1,0 +1,19 @@
+# 构建产物
+build/
+app/build/
+*.apk
+*.aab
+*.zip
+.gradle/
+local.properties
+
+# 签名私钥不进仓库
+keystore/*.jks
+keystore/*.keystore
+*.jks
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+*.log

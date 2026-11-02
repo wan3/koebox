@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 播放三角 -->
+    <path
+        android:pathData="M45,30 L75,46 L45,62 Z"
+        android:fillColor="#C9A7FF"
+        android:strokeColor="#C9A7FF"
+        android:strokeWidth="6"
+        android:strokeLineJoin="round" />
+    <!-- 字幕条 1 -->
+    <path
+        android:pathData="M38,70 h32 a3,3 0 0 1 0,6 h-32 a3,3 0 0 1 0,-6 z"
+        android:fillColor="#FF9DC0" />
+    <!-- 字幕条 2 -->
+    <path
+        android:pathData="M44,81 h20 a3,3 0 0 1 0,6 h-20 a3,3 0 0 1 0,-6 z"
+        android:fillColor="#FF9DC0"
+        android:fillAlpha="0.62" />
+</vector>
