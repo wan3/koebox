@@ -8,6 +8,8 @@
 > A local audio player for Android with synced LRC/SRT/VTT/ASS subtitles,
 > folder-based album library, and automatic cover detection.
 
+> 说明：这个项目仅仅是我个人自用的小工具，主要拿来听 ASMR。
+
 <p align="center">
   <img src="docs/screenshots/home.png" width="24%" alt="资料库" />
   <img src="docs/screenshots/album.png" width="24%" alt="专辑目录" />
