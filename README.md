@@ -8,6 +8,13 @@
 > A local audio player for Android with synced LRC/SRT/VTT/ASS subtitles,
 > folder-based album library, and automatic cover detection.
 
+<p align="center">
+  <img src="docs/screenshots/home.png" width="24%" alt="资料库" />
+  <img src="docs/screenshots/album.png" width="24%" alt="专辑目录" />
+  <img src="docs/screenshots/tracks.png" width="24%" alt="曲目列表" />
+  <img src="docs/screenshots/player.png" width="24%" alt="播放页" />
+</p>
+
 ## 功能
 
 - **按文件夹成专辑**：选一个目录 = 一个专辑，子目录原样保留，像文件管理器一样逐层浏览
@@ -66,6 +73,14 @@ app/src/main/java/com/koebox/app/
 - 只支持本地文件，不做在线流播
 - 导入会把文件**复制**进应用私有目录，大文件（24bit WAV 专辑常有 1GB+）会占空间
 - 卸载应用会一并删除已导入的副本
+
+## 免责声明
+
+- 本应用仅提供本地音视频文件的播放功能，**不提供、不托管、不分发任何音视频内容**。
+- 与任何音声制作社团、发行商、平台均无关联，未获其授权或背书。
+- 用户导入的文件由用户自行获取，请确保来源合法；开发者不对导入内容及其使用方式承担责任。
+- 本应用不包含也不提供任何 DRM 绕过、解密或内容抓取功能。
+- 软件按 MIT 许可「按现状」提供，不对适用性或使用后果作任何担保。
 
 ## 许可证
 
