@@ -22,6 +22,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # 不要用默认的 packages（里面的 tools 包已被 Google 下架）
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Restore signing keystore
         id: keystore
