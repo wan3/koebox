@@ -29,6 +29,11 @@ class Prefs(ctx: Context) {
     var lastTrackId: String?
         get() = sp.getString("last_track", null)
         set(v) = sp.edit().putString("last_track", v).apply()
+
+    /** 悬浮字幕：播放时在其它页面浮一条字幕 */
+    var floatingSub: Boolean
+        get() = sp.getBoolean("float_sub", false)
+        set(v) = sp.edit().putBoolean("float_sub", v).apply()
 }
 
 /** 时间格式化 */

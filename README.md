@@ -11,10 +11,11 @@
 > 说明：这个项目仅仅是我个人自用的小工具，主要拿来听 ASMR。
 
 <p align="center">
-  <img src="docs/screenshots/home.png" width="24%" alt="资料库" />
-  <img src="docs/screenshots/album.png" width="24%" alt="专辑目录" />
-  <img src="docs/screenshots/tracks.png" width="24%" alt="曲目列表" />
-  <img src="docs/screenshots/player.png" width="24%" alt="播放页" />
+  <img src="docs/screenshots/home.png" width="19%" alt="资料库" />
+  <img src="docs/screenshots/album.png" width="19%" alt="专辑目录" />
+  <img src="docs/screenshots/tracks.png" width="19%" alt="曲目列表" />
+  <img src="docs/screenshots/player.png" width="19%" alt="播放页" />
+  <img src="docs/screenshots/floating.png" width="19%" alt="悬浮字幕" />
 </p>
 
 ## 功能
@@ -26,6 +27,8 @@
 - **自动找封面**：同目录同名图 → `cover/folder/front/封面/ジャケット/表紙` → 插图目录 → 音频内嵌封面
 - **附件归档**：图片、台本 txt、PDF 一并入库，图片可全屏看，文本可内置阅读，其余交给系统应用
 - **批量换封面**：换封面时可以只改当前这首，也能一次替换整张专辑
+- **悬浮字幕**：开关打开后，在资料库、专辑页也能看到底部浮动的当前字幕（可拖动、可关闭）
+- **字幕不中断**：句与句之间的停顿里保持上一句，不会闪成空白
 - **后台播放**：通知栏控制，锁屏继续放；每首记住上次播放位置
 - **睡眠定时**：10 / 20 / 30 / 60 分钟自动暂停
 - 单文件 1.8MB，无网络权限，所有数据留在本地

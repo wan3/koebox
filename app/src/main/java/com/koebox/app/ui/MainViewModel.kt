@@ -31,6 +31,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     var busyText by mutableStateOf("正在导入…")
 
+    /** 悬浮字幕开关（同时写进 Prefs，App 里读这个状态来显示悬浮条） */
+    var floatingSub by mutableStateOf(prefs.floatingSub)
+
+    fun setFloating(v: Boolean) {
+        floatingSub = v
+        prefs.floatingSub = v
+    }
+
     var message by mutableStateOf<String?>(null)
 
     init {

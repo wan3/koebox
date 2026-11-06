@@ -115,7 +115,7 @@ fun PlayerScreen(
     val cover = rememberCover(track.coverPath, 900)
     val pos = ui.position
     val effPos = pos - offsetMs
-    val cueIndex = if (cues.isEmpty()) -1 else SubtitleParser.indexAt(cues, effPos)
+    val cueIndex = if (cues.isEmpty()) -1 else SubtitleParser.indexAtHold(cues, effPos)
     val currentCue = if (cueIndex in cues.indices) cues[cueIndex] else null
     val prevCue = if (cueIndex - 1 in cues.indices) cues[cueIndex - 1] else null
     val nextCue = if (cueIndex + 1 in cues.indices) cues[cueIndex + 1] else null
@@ -470,7 +470,9 @@ fun PlayerScreen(
                             },
                             sleepActive = sleepUntil > 0L,
                             onPickCover = { sheet = Sheet.NONE; onPickCover() },
-                            onPickSub = { sheet = Sheet.NONE; onPickSub() }
+                            onPickSub = { sheet = Sheet.NONE; onPickSub() },
+                            floating = vm.floatingSub,
+                            onFloating = { vm.setFloating(it) }
                         )
 
                         else -> {}
@@ -648,7 +650,9 @@ private fun MorePanel(
     onSleep: (Int) -> Unit,
     sleepActive: Boolean,
     onPickCover: () -> Unit,
-    onPickSub: () -> Unit
+    onPickSub: () -> Unit,
+    floating: Boolean,
+    onFloating: (Boolean) -> Unit
 ) {
     val speeds = listOf(0.75f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 1.75f, 2f)
     Column {
@@ -683,6 +687,29 @@ private fun MorePanel(
             SleepChip("20分", false) { onSleep(20) }
             SleepChip("30分", false) { onSleep(30) }
             SleepChip("60分", false) { onSleep(60) }
+        }
+
+        Spacer(Modifier.height(18.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("悬浮字幕", color = TextMain.copy(alpha = 0.9f), fontSize = 13.sp)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "播放时在资料库、专辑页也能看到当前字幕",
+                    color = TextDim,
+                    fontSize = 10.sp
+                )
+            }
+            androidx.compose.material3.Switch(
+                checked = floating,
+                onCheckedChange = onFloating,
+                colors = androidx.compose.material3.SwitchDefaults.colors(
+                    checkedThumbColor = Color(0xFF1A1024),
+                    checkedTrackColor = Lav,
+                    uncheckedThumbColor = TextDim,
+                    uncheckedTrackColor = Surface2
+                )
+            )
         }
 
         Spacer(Modifier.height(18.dp))

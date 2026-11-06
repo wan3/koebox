@@ -566,7 +566,15 @@ class LibraryRepo(private val ctx: Context) {
             val name = displayName(uri) ?: "cover.jpg"
             val ext = name.substringAfterLast('.', "").lowercase().ifEmpty { "jpg" }
             val dest = File(coverDir, "${idSeed}_${System.currentTimeMillis()}.$ext")
+            // 只读取源文件，绝不修改或删除它；这里记录一下便于排查"源文件不见了"的反馈
+            android.util.Log.i("koebox", "选封面：uri=$uri name=$name 预计大小=${displaySize(uri)}")
             copyTo(uri, dest)
+            val stillThere = try {
+                ctx.contentResolver.openInputStream(uri)?.use { true } ?: false
+            } catch (e: Exception) {
+                false
+            }
+            android.util.Log.i("koebox", "复制完成：目标=${dest.length()}B，源文件仍可读=$stillThere")
             if (dest.length() <= 0L) {
                 dest.delete()
                 null

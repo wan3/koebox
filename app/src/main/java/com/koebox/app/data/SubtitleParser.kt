@@ -202,4 +202,27 @@ object SubtitleParser {
         if (ans < 0) return -1
         return if (positionMs <= cues[ans].endMs + 700) ans else -1
     }
+
+    /**
+     * 保持式索引：取"最后一句已经开始的字幕"，不管它是否结束。
+     * 音声字幕句与句之间常有几秒停顿，用 [indexAt] 会在停顿里显示空白，
+     * 视觉上像"字幕不动了"；这里让上一句一直保留到下一句出现。
+     * 还没播到第一句时返回 -1。
+     */
+    fun indexAtHold(cues: List<Cue>, positionMs: Long): Int {
+        if (cues.isEmpty()) return -1
+        var lo = 0
+        var hi = cues.size - 1
+        var ans = -1
+        while (lo <= hi) {
+            val mid = (lo + hi) / 2
+            if (cues[mid].startMs <= positionMs) {
+                ans = mid
+                lo = mid + 1
+            } else {
+                hi = mid - 1
+            }
+        }
+        return ans
+    }
 }

@@ -10,9 +10,21 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -24,11 +36,19 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
@@ -36,10 +56,15 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import com.koebox.app.data.Cue
+import com.koebox.app.data.SubtitleParser
 import com.koebox.app.data.Track
 import com.koebox.app.playback.PlaybackService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.roundToInt
 
 /** 播放状态的共享视图模型 */
 class PlaybackUi {
@@ -267,6 +292,22 @@ fun App(vm: MainViewModel) {
             }
         }
 
+        // 悬浮字幕：播放中、不在播放页时显示在底部
+        if (vm.floatingSub && !playerOpen && currentTrack != null && currentTrack.hasSub) {
+            FloatingSubtitle(
+                vm = vm,
+                track = currentTrack,
+                position = ui.position,
+                offsetMs = vm.prefs.subOffsetMs,
+                onOpen = { playerOpen = true },
+                onClose = { vm.setFloating(false) },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(start = 12.dp, end = 12.dp, bottom = 92.dp)
+            )
+        }
+
         SnackbarHost(
             hostState = snackbar,
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -313,5 +354,100 @@ fun App(vm: MainViewModel) {
                 TextButton(onClick = { pendingCover = null }) { Text("取消", color = TextDim) }
             }
         )
+    }
+}
+
+/** 悬浮字幕条：可上下拖动，点一下回到播放页 */
+@Composable
+private fun FloatingSubtitle(
+    vm: MainViewModel,
+    track: Track,
+    position: Long,
+    offsetMs: Long,
+    onOpen: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val cues by produceState(emptyList<Cue>(), track.subPath) {
+        value = if (track.subPath != null) {
+            withContext(Dispatchers.IO) { vm.repo.subtitleOf(track) }
+        } else emptyList()
+    }
+    var dragY by remember(track.id) { mutableStateOf(0f) }
+
+    val effPos = position - offsetMs
+    val idx = if (cues.isEmpty()) -1 else SubtitleParser.indexAtHold(cues, effPos)
+    val current = if (idx in cues.indices) cues[idx].text else null
+    val prev = if (idx - 1 in cues.indices) cues[idx - 1].text else null
+
+    Box(
+        modifier
+            .offset { IntOffset(0, dragY.roundToInt()) }
+            .pointerInput(track.id) {
+                detectVerticalDragGestures { _, d -> dragY += d }
+            }
+            .clip(RoundedCornerShape(16.dp))
+            .background(Surface1.copy(alpha = 0.96f))
+            .fillMaxWidth()
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 6.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onOpen() }
+            ) {
+                if (prev != null) {
+                    Text(
+                        prev,
+                        color = TextDim.copy(alpha = 0.55f),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(3.dp))
+                }
+                Text(
+                    current ?: "♪",
+                    color = if (current != null) TextMain else TextDim.copy(alpha = 0.4f),
+                    fontSize = 14.sp,
+                    lineHeight = 19.sp,
+                    fontWeight = if (current != null) FontWeight.Medium else FontWeight.Normal,
+                    textAlign = TextAlign.Start,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Surface2)
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        "×",
+                        color = TextDim,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onClose() }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
     }
 }
