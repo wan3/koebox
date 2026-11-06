@@ -62,6 +62,10 @@ export ANDROID_HOME=/path/to/android-sdk
 > 仓库里不含签名密钥。自行构建时请在 `app/build.gradle.kts` 里配置自己的 keystore，
 > 否则 Release 包会用调试签名。
 
+推 `v*` 标签时 GitHub Actions 会自动构建并把 APK 附到对应 Release
+（见 `.github/workflows/build.yml`）。若仓库配置了 `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、
+`KEY_PASSWORD` 三个 secrets，产物会用正式签名；没配置则退回调试签名，仅供验证。
+
 ## 目录结构
 
 ```
@@ -78,6 +82,23 @@ app/src/main/java/com/koebox/app/
 - 只支持本地文件，不做在线流播
 - 导入会把文件**复制**进应用私有目录，大文件（24bit WAV 专辑常有 1GB+）会占空间
 - 卸载应用会一并删除已导入的副本
+
+## English
+
+**koebox** is a local audio player for Android built around synced subtitles — for audio dramas,
+audiobooks, ASMR and any "one audio file, one script" content. No network permission, everything stays on device.
+
+- **Folder-based albums** — pick a folder and it becomes one album; subfolders stay browsable like a file manager
+- **Synced subtitles** — LRC / SRT / VTT / ASS with the current line highlighted, tap a line to seek, ±0.2s / ±1s offset
+- **Automatic pairing** — audio pairs with same-named subtitles and covers, including double extensions such as `Track01.wav.vtt`
+- **Cover detection** — same-name image → `cover/folder/front/jacket` → illustration folder → embedded artwork
+- **Attachments** — images, scripts and PDFs are kept with the album; images open full screen, text is readable in-app
+- **Floating subtitles** — optional subtitle bar on the library and album screens while playing
+- **Subtitles never blink out** — a line stays on screen through pauses until the next one starts
+- **Background playback** — notification controls, per-track resume, sleep timer
+
+Requires Android 7.0 (API 24) or newer. Grab the APK from
+[Releases](https://github.com/wan3/koebox/releases). MIT licensed.
 
 ## 免责声明
 
