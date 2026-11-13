@@ -72,7 +72,8 @@ fun LibraryScreen(
     onAttachSub: (Track) -> Unit,
     onAttachCover: (Track) -> Unit,
     onToggle: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onOpenTimer: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<Track?>(null) }
@@ -120,6 +121,7 @@ fun LibraryScreen(
                         fontSize = 11.sp
                     )
                 }
+                TimerPill(vm = vm, onClick = onOpenTimer, modifier = Modifier.padding(end = 6.dp))
                 if (all.isNotEmpty()) {
                     SegmentedSwitch(
                         options = listOf("文件夹", "全部"),

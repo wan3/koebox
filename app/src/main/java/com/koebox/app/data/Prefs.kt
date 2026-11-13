@@ -30,6 +30,19 @@ class Prefs(ctx: Context) {
         get() = sp.getString("last_track", null)
         set(v) = sp.edit().putString("last_track", v).apply()
 
+    // ---- 计时器 ----
+    var timerEnabled: Boolean
+        get() = sp.getBoolean("timer_on", false)
+        set(v) = sp.edit().putBoolean("timer_on", v).apply()
+
+    var timerOnlyPlaying: Boolean
+        get() = sp.getBoolean("timer_only_playing", true)
+        set(v) = sp.edit().putBoolean("timer_only_playing", v).apply()
+
+    var timerElapsed: Long
+        get() = sp.getLong("timer_elapsed", 0L)
+        set(v) = sp.edit().putLong("timer_elapsed", v).apply()
+
     /** 悬浮字幕：播放时在其它页面浮一条字幕 */
     var floatingSub: Boolean
         get() = sp.getBoolean("float_sub", false)
@@ -53,6 +66,29 @@ object Fmt {
         val m = total / 60
         val s = total % 60
         return String.format("%d:%02d", m, s)
+    }
+
+    /** 计时器：00:23:41 / 1:02:15 */
+    fun clock(ms: Long): String {
+        val t = (ms / 1000).coerceAtLeast(0)
+        val h = t / 3600
+        val m = (t % 3600) / 60
+        val sec = t % 60
+        return if (h > 0) String.format("%d:%02d:%02d", h, m, sec)
+        else String.format("%02d:%02d:%02d", h, m, sec)
+    }
+
+    /** 中文时长：4 小时 06 分 / 23 分钟 */
+    fun human(ms: Long): String {
+        val t = (ms / 1000).coerceAtLeast(0)
+        val h = t / 3600
+        val m = (t % 3600) / 60
+        return when {
+            h > 0 && m > 0 -> "$h 小时 ${String.format("%02d", m)} 分"
+            h > 0 -> "$h 小时"
+            m > 0 -> "$m 分钟"
+            else -> "${t} 秒"
+        }
     }
 
     /** 进度条用 */

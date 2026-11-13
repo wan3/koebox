@@ -9,6 +9,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -41,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -111,6 +113,8 @@ fun App(vm: MainViewModel) {
     var subTarget by remember { mutableStateOf<Track?>(null) }
     var coverTarget by remember { mutableStateOf<Track?>(null) }
     var pendingCover by remember { mutableStateOf<PendingCover?>(null) }
+    var timerOpen by remember { mutableStateOf(false) }
+    var historyOpen by remember { mutableStateOf(false) }
 
     val pickFiles = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -239,6 +243,13 @@ fun App(vm: MainViewModel) {
 
     val currentTrack: Track? = vm.tracks.firstOrNull { it.id == ui.currentId }
 
+    // 计时器需要知道「是否在播放」和「当前专辑」
+    remember(ui, vm) {
+        vm.playingProvider = { ui.isPlaying }
+        vm.albumProvider = { vm.tracks.firstOrNull { it.id == ui.currentId }?.folder }
+        true
+    }
+
     Box(Modifier.fillMaxSize().background(Ink)) {
         val albumName = album
         if (albumName == null) {
@@ -254,7 +265,8 @@ fun App(vm: MainViewModel) {
                 onAttachSub = { t -> subTarget = t; pickSub.launch(arrayOf("*/*")) },
                 onAttachCover = { t -> coverTarget = t; pickCover.launch(arrayOf("*/*")) },
                 onToggle = { controller?.let { c -> if (c.isPlaying) c.pause() else c.play() } },
-                onNext = { controller?.seekToNextMediaItem() }
+                onNext = { controller?.seekToNextMediaItem() },
+                onOpenTimer = { timerOpen = true }
             )
         } else {
             AlbumScreen(
@@ -268,7 +280,8 @@ fun App(vm: MainViewModel) {
                 onAttachSub = { t -> subTarget = t; pickSub.launch(arrayOf("*/*")) },
                 onAttachCover = { t -> coverTarget = t; pickCover.launch(arrayOf("*/*")) },
                 onToggle = { controller?.let { c -> if (c.isPlaying) c.pause() else c.play() } },
-                onNext = { controller?.seekToNextMediaItem() }
+                onNext = { controller?.seekToNextMediaItem() },
+                onOpenTimer = { timerOpen = true }
             )
         }
 
@@ -308,6 +321,28 @@ fun App(vm: MainViewModel) {
             )
         }
 
+        // 计时器面板
+        if (timerOpen) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { timerOpen = false }
+            )
+            TimerSheetContent(
+                vm = vm,
+                onHistory = {
+                    timerOpen = false
+                    historyOpen = true
+                    vm.reloadSessions()
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
         SnackbarHost(
             hostState = snackbar,
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -318,6 +353,16 @@ fun App(vm: MainViewModel) {
                 contentColor = TextMain
             )
         }
+    }
+
+    if (historyOpen) {
+        Box(Modifier.fillMaxSize()) {
+            HistoryScreen(vm = vm, onBack = { historyOpen = false })
+        }
+    }
+
+    BackHandler(enabled = timelineBack(timerOpen, historyOpen)) {
+        if (timerOpen) timerOpen = false else historyOpen = false
     }
 
     // 换封面：问一下是改一首还是整张专辑
@@ -451,3 +496,5 @@ private fun FloatingSubtitle(
         }
     }
 }
+
+private fun timelineBack(timerOpen: Boolean, historyOpen: Boolean) = timerOpen || historyOpen

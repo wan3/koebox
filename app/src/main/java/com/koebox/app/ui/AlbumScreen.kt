@@ -102,7 +102,8 @@ fun AlbumScreen(
     onAttachSub: (Track) -> Unit,
     onAttachCover: (Track) -> Unit,
     onToggle: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onOpenTimer: () -> Unit
 ) {
     val context = LocalContext.current
     var viewerAsset by remember { mutableStateOf<Asset?>(null) }
@@ -163,6 +164,7 @@ fun AlbumScreen(
                     )
                 }
                 Spacer(Modifier.weight(1f))
+                TimerPill(vm = vm, onClick = onOpenTimer, modifier = Modifier.padding(end = 8.dp))
                 if (playable.isNotEmpty()) {
                     Row(
                         Modifier

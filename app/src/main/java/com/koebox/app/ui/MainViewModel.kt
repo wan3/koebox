@@ -12,9 +12,12 @@ import com.koebox.app.data.Asset
 import com.koebox.app.data.FolderGroup
 import com.koebox.app.data.ImportResult
 import com.koebox.app.data.LibraryRepo
+import com.koebox.app.data.ListeningSession
+import com.koebox.app.data.SessionRepo
 import com.koebox.app.data.Prefs
 import com.koebox.app.data.Track
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -41,8 +44,43 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     var message by mutableStateOf<String?>(null)
 
+    val sessionRepo = SessionRepo(app)
+    val sessions = mutableStateListOf<ListeningSession>()
+
+    // ---- 计时器状态 ----
+    var timerEnabled by mutableStateOf(prefs.timerEnabled)
+        private set
+    var timerOnlyPlaying by mutableStateOf(prefs.timerOnlyPlaying)
+        private set
+    var timerRunning by mutableStateOf(false)
+        private set
+    var timerElapsed by mutableStateOf(prefs.timerElapsed)
+        private set
+
+    /** 由 App 注入：当前是否在播放 */
+    var playingProvider: () -> Boolean = { false }
+    /** 由 App 注入：当前播放曲目所属专辑 */
+    var albumProvider: () -> String? = { null }
+
+    private var lastTickAt = 0L
+    private var lastSaveAt = 0L
+    private var sessionStartAt = 0L
+    private var sessionAlbum: String? = null
+    private var sessionBaseElapsed = 0L
+    private var idleSince = 0L
+
     init {
-        viewModelScope.launch { reload() }
+        viewModelScope.launch {
+            sessions.clear()
+            sessions.addAll(withContext(Dispatchers.IO) { sessionRepo.load() })
+            reload()
+        }
+        viewModelScope.launch {
+            while (true) {
+                delay(500)
+                timerTick()
+            }
+        }
     }
 
     suspend fun reload() {
@@ -231,6 +269,111 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             tracks.addAll(updated.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }))
             viewModelScope.launch(Dispatchers.IO) { repo.save(tracks.toList()) }
             message = if (changed > 0) "「$album」里的 $changed 首封面都换成新的了" else "封面读取失败"
+        }
+    }
+
+    // ---------------- 计时器 ----------------
+
+    fun enableTimer(v: Boolean) {
+        timerEnabled = v
+        prefs.timerEnabled = v
+        if (v) {
+            timerRunning = false
+            lastTickAt = System.currentTimeMillis()
+        } else {
+            closeSession(System.currentTimeMillis())
+            timerRunning = false
+        }
+    }
+
+    fun setOnlyPlaying(v: Boolean) {
+        timerOnlyPlaying = v
+        prefs.timerOnlyPlaying = v
+    }
+
+    fun toggleTimerRunning() {
+        timerRunning = !timerRunning
+        lastTickAt = System.currentTimeMillis()
+        if (timerRunning) closeSession(System.currentTimeMillis())
+    }
+
+    fun resetTimer() {
+        closeSession(System.currentTimeMillis())
+        timerElapsed = 0L
+        prefs.timerElapsed = 0L
+        sessionStartAt = 0L
+        sessionBaseElapsed = 0L
+        idleSince = 0L
+    }
+
+    private fun timerTick() {
+        val now = System.currentTimeMillis()
+        if (!timerEnabled) {
+            lastTickAt = now
+            return
+        }
+        val delta = if (lastTickAt == 0L) 0L else (now - lastTickAt).coerceIn(0L, 5000L)
+        lastTickAt = now
+
+        val active = !timerRunning && (!timerOnlyPlaying || playingProvider())
+        val album = albumProvider()
+
+        // 换了专辑：上一段收尾，另起一条
+        if (active && album != null && sessionAlbum != null && album != sessionAlbum) {
+            closeSession(now)
+        }
+        if (active) {
+            timerElapsed += delta
+            if (sessionStartAt == 0L) {
+                sessionStartAt = now
+                sessionBaseElapsed = timerElapsed - delta
+                sessionAlbum = album ?: ""
+            }
+            idleSince = 0L
+        } else if (sessionStartAt != 0L) {
+            if (idleSince == 0L) idleSince = now
+            if (now - idleSince > 10 * 60 * 1000L) closeSession(now)
+        }
+
+        // 节流落盘
+        if (now - lastSaveAt > 10_000L) {
+            prefs.timerElapsed = timerElapsed
+            lastSaveAt = now
+        }
+    }
+
+    /** 收尾当前这一段，达到 1 分钟才记一条 */
+    private fun closeSession(now: Long) {
+        if (sessionStartAt == 0L) return
+        val dur = timerElapsed - sessionBaseElapsed
+        val album = sessionAlbum ?: ""
+        sessionStartAt = 0L
+        sessionAlbum = null
+        sessionBaseElapsed = 0L
+        idleSince = 0L
+        if (dur < 60_000L) return
+        val item = ListeningSession(
+            id = java.util.UUID.randomUUID().toString(),
+            album = album,
+            startAt = now - dur,
+            endAt = now,
+            durationMs = dur
+        )
+        viewModelScope.launch {
+            val list = withContext(Dispatchers.IO) {
+                sessionRepo.append(sessions.toMutableList(), item)
+            }
+            sessions.clear()
+            sessions.addAll(list)
+        }
+    }
+
+    /** 记录刷新（进入记录页时调用） */
+    fun reloadSessions() {
+        viewModelScope.launch {
+            val list = withContext(Dispatchers.IO) { sessionRepo.load() }
+            sessions.clear()
+            sessions.addAll(list)
         }
     }
 
